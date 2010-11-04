@@ -66,12 +66,14 @@ test_feeding = "Given input (Just 1, Nothing) and both outputs feed from slot 0 
 
 test_that_output_feeds_by_connections_to_input = "Outputs feed connectivity to inputs" ~:
   [Nothing, Just 1, Just 2] ~=? (map_outputs_to_inputs [Just 1, Nothing, Just 2] [1, 0, 2])
+test_that_an_input_can_be_unconnected_but_still_be_initially_fed = -- Use Maybe for connectivity?
 
 tests = TestList [ test_feed    
                  , test_feed_inc
                  , test_swap
                  , test_feeding
                  , test_that_output_feeds_by_connections_to_input
+                 , test_that_an_input_can_be_unconnected_but_still_be_initially_fed
                  ]
 
 main = runTestTT tests
