@@ -1,0 +1,8 @@
+- Support multiple inputs to functions
+- Support async arrival of inputs. Wait if there is Nothing on input
+- sum_f should take two inputs
+- visualization to string (show)
+- visualization to graph (dot?)
+- visualization to scene graph
+- Simulate step forward, backward
+- animate transitions (show what changed)
