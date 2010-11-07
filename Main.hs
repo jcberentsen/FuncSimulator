@@ -4,6 +4,7 @@ import Monad
 -- Production code below
 data Func = Func (Carrier->Carrier)
 type Carrier = Maybe Integer
+type Connection = Maybe Int
 {- 
 A simulation is a set of connected functions 
 The functions map to the inputs.
@@ -13,7 +14,7 @@ The connections feed the output to the inputs
 data SimulationState = SimulationState
      {
      funcs :: [Func],
-     connections :: [Int], -- which output feeds to input n
+     connections :: [Connection], -- which output feeds to input n, Nothing means unconnected
      inputs :: [Carrier],
      outputs :: [Carrier]
      }
@@ -21,7 +22,7 @@ data SimulationState = SimulationState
 -- feed output to inputs for all connections
 feed :: SimulationState -> SimulationState
 feed (SimulationState f c i o) = SimulationState f c i' o where
-     i' = map_outputs_to_inputs o c
+     i' = map_outputs_to_inputs i o c
 
 app :: Func -> Carrier -> Carrier
 app (Func f) c =  f c
@@ -35,16 +36,21 @@ simulate_step s = feed (apply s)
 
 get_input inputs connections index = inputs !! (connections !! index)
 
-map_outputs_to_inputs :: [Carrier] -> [Int] -> [Carrier]
-map_outputs_to_inputs inputs connections = map (\c -> inputs !! c) connections
+map_outputs_to_inputs :: [Carrier] -> [Carrier] -> [Connection] -> [Carrier]
+map_outputs_to_inputs inputs outputs connections = map (\c -> select_connected inputs outputs c) (zip connections [1..])
 
+select_connected inputs outputs (c, i) =
+  case c of
+       Nothing -> inputs !! 0 -- ?
+       Just n -> outputs !! n
+ 
 nop = Func id
 inc = Func (liftM (1+))
 
 ---- Test Harness below
 nop_sim = SimulationState [nop] [] [Just 1] []
-nop_inc_sim = SimulationState [nop, inc] [0, 1] [Nothing, Just 1] []
-nop_nop_swap_sim = SimulationState [nop, nop] [1, 0] [Just 1, Just 2] []
+nop_inc_sim = SimulationState [nop, inc] [Just 0, Just 1] [Nothing, Just 1] []
+nop_nop_swap_sim = SimulationState [nop, nop] [Just 1, Just 0] [Just 1, Just 2] []
 
 ---- Tests below
 
@@ -65,15 +71,23 @@ test_feeding = "Given input (Just 1, Nothing) and both outputs feed from slot 0 
   Just 1 ~=? (get_input [Just 1, Nothing] [0, 0] 1)
 
 test_that_output_feeds_by_connections_to_input = "Outputs feed connectivity to inputs" ~:
-  [Nothing, Just 1, Just 2] ~=? (map_outputs_to_inputs [Just 1, Nothing, Just 2] [1, 0, 2])
-test_that_an_input_can_be_unconnected_but_still_be_initially_fed = -- Use Maybe for connectivity?
+  [Nothing, Just 1, Just 2] ~=? (map_outputs_to_inputs [] [Just 1, Nothing, Just 2] [Just 1, Just 0, Just 2])
+
+test_that_unconnected_input_reuses_input_and_ignores_output = "Unconnected input stays in old state" ~:
+  [Just 1] ~=? (map_outputs_to_inputs [Just 1] [Just 2] [Nothing])
+
+test_that_an_unconnected_inc_element_given_1_yields_2 = "Given an unconnected inc, when feeding in Just 1, the resulting output becomes Just 2" ~:
+  [Just 2] ~=? outputs (simulate_step single_inc)
+    where single_inc = SimulationState [inc] [Nothing] [Just 1] []
+
 
 tests = TestList [ test_feed    
                  , test_feed_inc
                  , test_swap
                  , test_feeding
                  , test_that_output_feeds_by_connections_to_input
-                 , test_that_an_input_can_be_unconnected_but_still_be_initially_fed
+                 , test_that_unconnected_input_reuses_input_and_ignores_output
+                 , test_that_an_unconnected_inc_element_given_1_yields_2
                  ]
 
 main = runTestTT tests
