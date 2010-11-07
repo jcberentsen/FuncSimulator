@@ -46,6 +46,7 @@ select_connected inputs outputs (c, i) =
  
 nop = Func id
 inc = Func (liftM (1+))
+sum_f = Func id
 
 ---- Test Harness below
 nop_sim = SimulationState [nop] [] [Just 1] []
@@ -80,6 +81,9 @@ test_that_an_unconnected_inc_element_given_1_yields_2 = "Given an unconnected in
   [Just 2] ~=? outputs (simulate_step single_inc)
     where single_inc = SimulationState [inc] [Nothing] [Just 1] []
 
+test_sum_of_inputs = "Given a sum element, when given 1 and 2, output 3" ~:
+  [Just 3] ~=? outputs (simulate_step sigma)
+    where sigma = SimulationState [sum_f] [Nothing, Nothing] [Just 1, Just 2] []
 
 tests = TestList [ test_feed    
                  , test_feed_inc
@@ -88,6 +92,7 @@ tests = TestList [ test_feed
                  , test_that_output_feeds_by_connections_to_input
                  , test_that_unconnected_input_reuses_input_and_ignores_output
                  , test_that_an_unconnected_inc_element_given_1_yields_2
+                 , test_sum_of_inputs
                  ]
 
 main = runTestTT tests
