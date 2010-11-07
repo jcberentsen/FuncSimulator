@@ -54,18 +54,4 @@ select_connected inputs outputs (c, i) =
 
 nop = Func id
 inc = Func (liftM (1+))
-sum_f = Func id
-
-{-
-Simulator process:
-feed (take input, transfer output, push/pull)
-apply (apply function, set output)
-
-Structure:
-Functions of dom -> cod
-Node has Function and input and output ports
-feeds from output to compatible input
-
-an input that is not connected to anything just has Nothing as state
-if input 0 is unconnected to anything it has connectivity Nothing.
--}
+sum_f = Func id -- TODO
